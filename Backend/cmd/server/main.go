@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"github.com/go-chi/chi/v5"
 	"encoding/json"
+	"server/db"
 )
 
 type User struct{
@@ -13,6 +14,9 @@ type User struct{
 }
 
 func main(){
+
+	db.InitDB()
+
 	r := chi.NewRouter()
 	var users []User
 	users = append(users, User{Name: "Soham", Age: 21})
