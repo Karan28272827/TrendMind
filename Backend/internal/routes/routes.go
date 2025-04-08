@@ -10,6 +10,6 @@ import (
 func AuthRouter() http.Handler {
 	r := chi.NewRouter()
 	r.Post("/register", handlers.Register)
-
+	r.Post("/login", handlers.Login)
 	return r
 }
