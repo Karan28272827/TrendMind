@@ -105,7 +105,7 @@ const SignupForm = () => {
         <h1 className="logo">TrendMind</h1>
         <div className="top-right-links">
           <span>
-            New User? <a href="/login">Login</a>
+            Already have an account? <a href="/login">Login</a>
           </span>
         </div>
         <p>Register to continue</p>

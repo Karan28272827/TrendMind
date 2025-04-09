@@ -4,3 +4,8 @@ export interface SignupFormData {
     password: string;
     retypepassword: string;
   }
+
+  export interface LoginFormData {
+    email: string,
+    password: string
+  }
