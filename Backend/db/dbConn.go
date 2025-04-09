@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"os"
 
@@ -18,9 +17,7 @@ func InitDB() {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	connStr := fmt.Sprintf("host=localhost port=5432 user=%s password=%s dbname=trendmind sslmode=disable", os.Getenv("DB_USER"), os.Getenv("DB_PASS"))
-
-	fmt.Println(os.Getenv("DB_USER"))
+	connStr := os.Getenv("DB_URL")
 
 	db, err := sql.Open("postgres", connStr)
 

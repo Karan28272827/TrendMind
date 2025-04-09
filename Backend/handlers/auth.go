@@ -59,10 +59,11 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var row = db.DB.QueryRow("SELECT password FROM users WHERE email=$1", loginUser.Email)
+	var row = db.DB.QueryRow("SELECT name, password FROM users WHERE email=$1", loginUser.Email)
 	var dbPassword string
+	var dbName string
 
-	if err := row.Scan(&dbPassword); err != nil { //Inputting password from database into dbPassword variable
+	if err := row.Scan(&dbName, &dbPassword); err != nil { //Inputting password from database into dbPassword variable
 		fmt.Println("There was some error", err)
 		return
 	}
@@ -75,6 +76,15 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		fmt.Println("\nCorrect password")
-		fmt.Fprintln(w, "Correct password, logged in")
+		tokenStr, err := utils.CreateToken(dbName, loginUser.Email)
+		if err != nil {
+			fmt.Println("There was some JWT token error", err)
+			return
+		}
+		fmt.Fprintf(w, "Correct password, logged in\n JWT: %s", tokenStr)
 	}
+}
+
+func Profile(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "Test")
 }
