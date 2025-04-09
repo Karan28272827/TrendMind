@@ -12,12 +12,16 @@ import (
 func AuthRouter() http.Handler {
 	r := chi.NewRouter()
 
-	r.Group(func(r chi.Router) {
+	r.Group(func(r chi.Router) { //testing JWT middleware and route protection
 		r.Use(middleware.JWTMiddleware)
 		r.Get("/profile", handlers.Profile)
 	})
 
 	r.Post("/register", handlers.Register) //register route
 	r.Post("/login", handlers.Login)       //login route
+
+	r.Get("/google", handlers.GoogleLogin)
+	r.Get("/google/callback", handlers.GoogleCallback)
+
 	return r
 }

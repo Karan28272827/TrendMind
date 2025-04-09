@@ -11,6 +11,7 @@ import (
 	"server/models"
 
 	_ "github.com/lib/pq"
+	"github.com/markbates/goth/gothic"
 )
 
 func Register(w http.ResponseWriter, r *http.Request) {
@@ -24,19 +25,17 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	row := db.DB.QueryRow("SELECT email FROM users WHERE email=$1", user.Email)
 
-	var duplicateEmail string
-	duplicateErr := row.Scan(&duplicateEmail)
-	fmt.Println(duplicateEmail)
-	if duplicateErr == sql.ErrNoRows {
-		fmt.Println("No common email")
-	} else if duplicateErr != nil {
+	email, duplicateErr := utils.IsDuplicateEmail(row)
+	if duplicateErr != nil {
 		fmt.Println("some unknown error", duplicateErr)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
-	} else {
+	} else if email != "" {
 		fmt.Println("email is duplicate Or ")
-		fmt.Fprintln(w, "email is duplicate", user.Email)
+		fmt.Fprintln(w, "email is duplicate", email)
 		return
+	} else {
+		fmt.Println("No common email")
 	}
 
 	sqlQuery := `INSERT INTO users (name, email, password) VALUES($1, $2, $3)`
@@ -87,4 +86,49 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 func Profile(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Test")
+}
+
+func GoogleLogin(w http.ResponseWriter, r *http.Request) { //Function that initiates the redirection to google login
+	r.URL.RawQuery = r.URL.RawQuery + "&provider=google"
+	gothic.BeginAuthHandler(w, r)
+}
+
+func GoogleCallback(w http.ResponseWriter, r *http.Request) {
+	user, err := gothic.CompleteUserAuth(w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+	}
+
+	//check if user exists in db
+	row := db.DB.QueryRow("SELECT email FROM users WHERE email=$1", user.Email)
+	email, duplicateErr := utils.IsDuplicateEmail(row)
+	if duplicateErr != nil {
+		fmt.Println("some unknown error", duplicateErr)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	} else if email != "" {
+		//issue jwt and login if email is already present
+		fmt.Println("email is duplicate Or ")
+		fmt.Fprintln(w, "email is already registered, logging in: ", email)
+	} else {
+		//register user
+		sqlQuery := `INSERT INTO users (name, email, password) VALUES($1, $2, $3)`
+		password := sql.NullString{String: "", Valid: false}
+		_, err := db.DB.Exec(sqlQuery, user.Name, user.Email, password)
+		if err != nil {
+			fmt.Println("Row not inserted ", err)
+			http.Error(w, "Row was not inserted", http.StatusBadRequest)
+			return
+		} else {
+			fmt.Println("\nRow inserted")
+		}
+	}
+
+	//generate JWT
+	tokenStr, err := utils.CreateToken(user.Name, user.Email)
+	if err != nil {
+		fmt.Println("There was some JWT token error", err)
+		return
+	}
+	fmt.Fprintf(w, "Correct password, logged in\n JWT: %s", tokenStr)
 }
