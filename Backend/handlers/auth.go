@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -99,36 +98,19 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 	}
 
-	//check if user exists in db
-	row := db.DB.QueryRow("SELECT email FROM users WHERE email=$1", user.Email)
-	email, duplicateErr := utils.IsDuplicateEmail(row)
-	if duplicateErr != nil {
-		fmt.Println("some unknown error", duplicateErr)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	} else if email != "" {
-		//issue jwt and login if email is already present
-		fmt.Println("email is duplicate Or ")
-		fmt.Fprintln(w, "email is already registered, logging in: ", email)
-	} else {
-		//register user
-		sqlQuery := `INSERT INTO users (name, email, password) VALUES($1, $2, $3)`
-		password := sql.NullString{String: "", Valid: false}
-		_, err := db.DB.Exec(sqlQuery, user.Name, user.Email, password)
-		if err != nil {
-			fmt.Println("Row not inserted ", err)
-			http.Error(w, "Row was not inserted", http.StatusBadRequest)
-			return
-		} else {
-			fmt.Println("\nRow inserted")
-		}
+	utils.HandleOAuthCallback(w, user.Name, user.Email)
+}
+
+func GithubLogin(w http.ResponseWriter, r *http.Request) {
+	r.URL.RawQuery = r.URL.RawQuery + "&provider=github"
+	gothic.BeginAuthHandler(w, r)
+}
+
+func GithubCallback(w http.ResponseWriter, r *http.Request) {
+	user, err := gothic.CompleteUserAuth(w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 	}
 
-	//generate JWT
-	tokenStr, err := utils.CreateToken(user.Name, user.Email)
-	if err != nil {
-		fmt.Println("There was some JWT token error", err)
-		return
-	}
-	fmt.Fprintf(w, "Correct password, logged in\n JWT: %s", tokenStr)
+	utils.HandleOAuthCallback(w, user.Name, user.Email)
 }

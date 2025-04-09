@@ -23,5 +23,8 @@ func AuthRouter() http.Handler {
 	r.Get("/google", handlers.GoogleLogin)
 	r.Get("/google/callback", handlers.GoogleCallback)
 
+	r.Get("/github", handlers.GithubLogin)
+	r.Get("/github/callback", handlers.GithubCallback)
+
 	return r
 }
