@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"server/models"
 
 	_ "github.com/lib/pq"
+	"github.com/markbates/goth/gothic"
 )
 
 func Register(w http.ResponseWriter, r *http.Request) {
@@ -24,19 +24,17 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	row := db.DB.QueryRow("SELECT email FROM users WHERE email=$1", user.Email)
 
-	var duplicateEmail string
-	duplicateErr := row.Scan(&duplicateEmail)
-	fmt.Println(duplicateEmail)
-	if duplicateErr == sql.ErrNoRows {
-		fmt.Println("No common email")
-	} else if duplicateErr != nil {
+	email, duplicateErr := utils.IsDuplicateEmail(row)
+	if duplicateErr != nil {
 		fmt.Println("some unknown error", duplicateErr)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
-	} else {
+	} else if email != "" {
 		fmt.Println("email is duplicate Or ")
-		fmt.Fprintln(w, "email is duplicate", user.Email)
+		fmt.Fprintln(w, "email is duplicate", email)
 		return
+	} else {
+		fmt.Println("No common email")
 	}
 
 	sqlQuery := `INSERT INTO users (name, email, password) VALUES($1, $2, $3)`
@@ -87,4 +85,32 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 func Profile(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Test")
+}
+
+func GoogleLogin(w http.ResponseWriter, r *http.Request) { //Function that initiates the redirection to google login
+	r.URL.RawQuery = r.URL.RawQuery + "&provider=google"
+	gothic.BeginAuthHandler(w, r)
+}
+
+func GoogleCallback(w http.ResponseWriter, r *http.Request) {
+	user, err := gothic.CompleteUserAuth(w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+	}
+
+	utils.HandleOAuthCallback(w, user.Name, user.Email)
+}
+
+func GithubLogin(w http.ResponseWriter, r *http.Request) {
+	r.URL.RawQuery = r.URL.RawQuery + "&provider=github"
+	gothic.BeginAuthHandler(w, r)
+}
+
+func GithubCallback(w http.ResponseWriter, r *http.Request) {
+	user, err := gothic.CompleteUserAuth(w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+	}
+
+	utils.HandleOAuthCallback(w, user.Name, user.Email)
 }
