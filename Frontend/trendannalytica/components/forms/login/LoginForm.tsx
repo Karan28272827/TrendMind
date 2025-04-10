@@ -7,6 +7,7 @@ import { loginUser } from "@/services/authService";
 import api from "@/constants/api";
 import axios from "axios";
 import "./LoginForm.css"
+
 // import "./SignupForm.css"; 
 
 const LoginForm = () => {
@@ -21,6 +22,11 @@ const LoginForm = () => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
+
+    const handleGoogleSignIn = () => {
+        return axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/google`);
+    }
+
 
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -132,7 +138,7 @@ const LoginForm = () => {
                             className="mdi mdi-google"
                             style={{ fontSize: "30px", color: "red", cursor: "pointer" }}
                             title="Sign in with Google"
-                            // onClick={handleGoogleSignIn}
+                            onClick={handleGoogleSignIn}
                         />
                         <i
                             className="mdi mdi-github"
