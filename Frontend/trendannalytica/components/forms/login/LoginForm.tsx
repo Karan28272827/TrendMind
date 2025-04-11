@@ -24,7 +24,7 @@ const LoginForm = () => {
     };
 
     const handleGoogleSignIn = () => {
-        return axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/google`);
+        window.location.href = "http://localhost:8080/auth/google";
     }
 
 

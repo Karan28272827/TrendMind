@@ -5,10 +5,19 @@ import (
 	"fmt"
 	"net/http"
 
+	"os"
 	"server/db"
 )
 
-func HandleOAuthCallback(w http.ResponseWriter, name string, email string) {
+func HandleOAuthCallback(w http.ResponseWriter, name string, email string, r *http.Request) {
+
+	if name == "" || email == "" {
+		fmt.Println("Invalid OAuth response user did not accept the google login")
+		redirectUrl := fmt.Sprintf("%s/login?msg=LoginFailed", os.Getenv("FRONTEND_URL"))
+		http.Redirect(w, r, redirectUrl, http.StatusSeeOther)
+		return
+	}
+
 	row := db.DB.QueryRow("SELECT email FROM users WHERE email=$1", email)
 	existingEmail, err := IsDuplicateEmail(row)
 	if err != nil {
@@ -21,7 +30,9 @@ func HandleOAuthCallback(w http.ResponseWriter, name string, email string) {
 		password := sql.NullString{String: "", Valid: false}
 		_, err := db.DB.Exec("INSERT INTO users (name, email, password) VALUES ($1, $2, $3)", name, email, password)
 		if err != nil {
-			http.Error(w, "User registration failed", http.StatusInternalServerError)
+			fmt.Println("User registration failed")
+			redirectUrl := fmt.Sprintf("%s/login?msg=LoginFailed", os.Getenv("FRONTEND_URL"))
+			http.Redirect(w, r, redirectUrl, http.StatusSeeOther)
 			return
 		}
 		fmt.Println("New user registered:", email)
@@ -36,5 +47,7 @@ func HandleOAuthCallback(w http.ResponseWriter, name string, email string) {
 		return
 	}
 
-	fmt.Fprintf(w, "Logged in!\nJWT: %s", token)
+	// fmt.Fprintf(w, "Logged in!\nJWT: %s", token)
+	redirectUrl := fmt.Sprintf("%s/login?jwt=%s", os.Getenv("FRONTEND_URL"), token)
+	http.Redirect(w, r, redirectUrl, http.StatusSeeOther)
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"server/db"
 	"server/utils"
 
@@ -95,10 +96,12 @@ func GoogleLogin(w http.ResponseWriter, r *http.Request) { //Function that initi
 func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	user, err := gothic.CompleteUserAuth(w, r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		redirectUrl := fmt.Sprintf("%s/login?msg=LoginFailed", os.Getenv("FRONTEND_URL"))
+		http.Redirect(w, r, redirectUrl, http.StatusSeeOther)
+		return
 	}
 
-	utils.HandleOAuthCallback(w, user.Name, user.Email)
+	utils.HandleOAuthCallback(w, user.Name, user.Email, r)
 }
 
 func GithubLogin(w http.ResponseWriter, r *http.Request) {
@@ -112,5 +115,5 @@ func GithubCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 	}
 
-	utils.HandleOAuthCallback(w, user.Name, user.Email)
+	utils.HandleOAuthCallback(w, user.Name, user.Email, r)
 }
