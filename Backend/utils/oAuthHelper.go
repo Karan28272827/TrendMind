@@ -14,7 +14,7 @@ func HandleOAuthCallback(w http.ResponseWriter, name string, email string, r *ht
 	if name == "" || email == "" {
 		fmt.Println("Invalid OAuth response user did not accept the google login")
 		redirectUrl := fmt.Sprintf("%s/login?msg=LoginFailed", os.Getenv("FRONTEND_URL"))
-		http.Redirect(w, r, redirectUrl, http.StatusSeeOther)
+		http.Redirect(w, r, redirectUrl, http.StatusUnauthorized)
 		return
 	}
 
@@ -32,7 +32,7 @@ func HandleOAuthCallback(w http.ResponseWriter, name string, email string, r *ht
 		if err != nil {
 			fmt.Println("User registration failed")
 			redirectUrl := fmt.Sprintf("%s/login?msg=LoginFailed", os.Getenv("FRONTEND_URL"))
-			http.Redirect(w, r, redirectUrl, http.StatusSeeOther)
+			http.Redirect(w, r, redirectUrl, http.StatusUnauthorized)
 			return
 		}
 		fmt.Println("New user registered:", email)

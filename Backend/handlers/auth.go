@@ -97,7 +97,7 @@ func GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	user, err := gothic.CompleteUserAuth(w, r)
 	if err != nil {
 		redirectUrl := fmt.Sprintf("%s/login?msg=LoginFailed", os.Getenv("FRONTEND_URL"))
-		http.Redirect(w, r, redirectUrl, http.StatusSeeOther)
+		http.Redirect(w, r, redirectUrl, http.StatusUnauthorized)
 		return
 	}
 
