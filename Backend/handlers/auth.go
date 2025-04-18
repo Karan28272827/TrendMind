@@ -80,6 +80,14 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("There was some JWT token error", err)
 			return
 		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "token",
+			Value:    tokenStr,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   false,
+			SameSite: http.SameSiteLaxMode,
+		})
 		fmt.Fprintf(w, "Correct password, logged in\n JWT: %s", tokenStr)
 	}
 }

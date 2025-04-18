@@ -59,7 +59,7 @@ const LoginForm = () => {
         localStorage.setItem("user", JSON.stringify(user));
 
         alert("Login successful!");
-        router.push("/trends");
+        router.push("/testProtectedRoute");
       }
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {

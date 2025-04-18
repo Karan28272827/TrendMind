@@ -48,6 +48,14 @@ func HandleOAuthCallback(w http.ResponseWriter, name string, email string, r *ht
 	}
 
 	// fmt.Fprintf(w, "Logged in!\nJWT: %s", token)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	})
 	redirectUrl := fmt.Sprintf("%s/login?jwt=%s", os.Getenv("FRONTEND_URL"), token)
 	http.Redirect(w, r, redirectUrl, http.StatusSeeOther)
 }
