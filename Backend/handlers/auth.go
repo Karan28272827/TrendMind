@@ -7,9 +7,9 @@ import (
 	"os"
 	"server/db"
 	"server/utils"
-
 	"server/models"
 
+	
 	_ "github.com/lib/pq"
 	"github.com/markbates/goth/gothic"
 )
@@ -47,7 +47,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fmt.Println("\nRow inserted")
 		return
-	}
+	 }
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +82,72 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Fprintf(w, "Correct password, logged in\n JWT: %s", tokenStr)
 	}
+}
+
+func ForgotPassword(w http.ResponseWriter, r *http.Request) {
+    var request models.ForgotPasswordRequest
+    
+    if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+        http.Error(w, "Invalid input", http.StatusBadRequest)
+        return
+    }
+
+    // Verify email exists
+    var dbEmail string
+    err := db.DB.QueryRow("SELECT email FROM users WHERE email=$1", request.Email).Scan(&dbEmail)
+    if err != nil {
+        http.Error(w, "Email not found", http.StatusNotFound)
+        return
+    }
+
+    // Generate token
+    token, err := utils.CreateResetPasswordToken(request.Email)
+    if err != nil {
+        http.Error(w, "Could not generate token", http.StatusInternalServerError)
+        return
+    }
+
+    // Send just the raw token (not full URL)
+    err = utils.SendResetEmail(request.Email, token)
+    if err != nil {
+        http.Error(w, "Failed to send email", http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]string{
+        "message": "Password reset instructions sent to your email",
+    })
+}
+
+func ResetPassword(w http.ResponseWriter, r *http.Request) {
+    var request struct {
+        Token       string `json:"token"`
+        NewPassword string `json:"newPassword"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+        http.Error(w, "Invalid input", http.StatusBadRequest)
+        return
+    }
+
+    // Validate token and update password
+    email, err := utils.VerifyResetToken(request.Token)
+    if err != nil {
+        http.Error(w, "Invalid/expired token", http.StatusUnauthorized)
+        return
+    }
+
+    hashedPassword := utils.HashPassword(request.NewPassword)
+    _, err = db.DB.Exec("UPDATE users SET password = $1 WHERE email = $2", hashedPassword, email)
+    if err != nil {
+        http.Error(w, "Failed to update password", http.StatusInternalServerError)
+        return
+    }
+
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]string{
+        "message": "Password updated successfully",
+    })
 }
 
 func Profile(w http.ResponseWriter, r *http.Request) {

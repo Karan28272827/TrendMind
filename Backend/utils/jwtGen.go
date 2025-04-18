@@ -28,3 +28,4 @@ func CreateToken(email string, name string) (string, error) {
 
 	return tokenString, nil
 }
+
