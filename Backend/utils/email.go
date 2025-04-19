@@ -55,28 +55,34 @@ func CreateResetPasswordToken(email string) (string, error) {
 
 	return tokenString, nil
 }
+
+
 func VerifyResetToken(tokenString string) (string, error) {
-	// Parse the token
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Validate the signing method
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return []byte(os.Getenv("JWT_SECRET")), nil
-	})
 
-	if err != nil {
-		return "", fmt.Errorf("invalid token: %v", err)
-	}
+    // Parse the token
+    token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+        if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+            return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+        }
+        secret := os.Getenv("SECRET_KEY")
+        return []byte(secret), nil
+    })
 
-	// Extract claims
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		email, ok := claims["email"].(string)
-		if !ok {
-			return "", fmt.Errorf("email not found in token")
-		}
-		return email, nil
-	}
+    if err != nil {
+        fmt.Println("JWT Parse Error:", err) // Log the error if any
+        return "", fmt.Errorf("invalid token: %v", err)
+    }
 
-	return "", fmt.Errorf("invalid token")
+    // Log the token claims
+    if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+        email, ok := claims["email"].(string)
+        if !ok {
+            return "", fmt.Errorf("email not found in token")
+        }
+        return email, nil
+    }
+
+    return "", fmt.Errorf("invalid token")
 }
+
+
