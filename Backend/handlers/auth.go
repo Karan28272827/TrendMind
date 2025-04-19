@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"os"
 	"server/db"
-	"server/utils"
 	"server/models"
+	"server/utils"
 
-	
+	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/lib/pq"
 	"github.com/markbates/goth/gothic"
 )
@@ -38,7 +38,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("No common email")
 	}
 
-	sqlQuery := `INSERT INTO users (name, email, password) VALUES($1, $2, $3)`
+	sqlQuery := `INSERT INTO users (name, email, password, is_verified) VALUES($1, $2, $3, false)`
 	var _, err = db.DB.Exec(sqlQuery, user.Name, user.Email, HashedPass)
 	if err != nil {
 		fmt.Println("Row not inserted ", err)
@@ -47,7 +47,7 @@ func Register(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fmt.Println("\nRow inserted")
 		return
-	 }
+	}
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +71,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	if !utils.CompareHashAndPassword(dbPassword, loginUser.Password) { //Checking if password matches
 		fmt.Println("Invalid pass")
-		fmt.Fprintln(w, "Invalid password")
+		http.Error(w, "Invalid password from backend", http.StatusBadRequest)
 		return
 	} else {
 		fmt.Println("\nCorrect password")
@@ -88,74 +88,83 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			Secure:   false,
 			SameSite: http.SameSiteLaxMode,
 		})
+		fmt.Println("Entering db select query for is verified")
+		row := db.DB.QueryRow("SELECT is_verified FROM users WHERE email=$1", loginUser.Email)
+		var isVerified bool
+		if err := row.Scan(&isVerified); err != nil {
+			fmt.Println("There was a db error", err)
+		}
+		if !isVerified {
+			utils.SendVerificationEmail(loginUser.Email, tokenStr)
+		}
 		fmt.Fprintf(w, "Correct password, logged in\n JWT: %s", tokenStr)
 	}
 }
 
 func ForgotPassword(w http.ResponseWriter, r *http.Request) {
-    var request models.ForgotPasswordRequest
-    
-    if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-        http.Error(w, "Invalid input", http.StatusBadRequest)
-        return
-    }
+	var request models.ForgotPasswordRequest
 
-    // Verify email exists
-    var dbEmail string
-    err := db.DB.QueryRow("SELECT email FROM users WHERE email=$1", request.Email).Scan(&dbEmail)
-    if err != nil {
-        http.Error(w, "Email not found", http.StatusNotFound)
-        return
-    }
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Invalid input", http.StatusBadRequest)
+		return
+	}
 
-    // Generate token
-    token, err := utils.CreateResetPasswordToken(request.Email)
-    if err != nil {
-        http.Error(w, "Could not generate token", http.StatusInternalServerError)
-        return
-    }
+	// Verify email exists
+	var dbEmail string
+	err := db.DB.QueryRow("SELECT email FROM users WHERE email=$1", request.Email).Scan(&dbEmail)
+	if err != nil {
+		http.Error(w, "Email not found", http.StatusNotFound)
+		return
+	}
 
-    // Send just the raw token (not full URL)
-    err = utils.SendResetEmail(request.Email, token)
-    if err != nil {
-        http.Error(w, "Failed to send email", http.StatusInternalServerError)
-        return
-    }
+	// Generate token
+	token, err := utils.CreateResetPasswordToken(request.Email)
+	if err != nil {
+		http.Error(w, "Could not generate token", http.StatusInternalServerError)
+		return
+	}
 
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(map[string]string{
-        "message": "Password reset instructions sent to your email",
-    })
+	// Send just the raw token (not full URL)
+	err = utils.SendResetEmail(request.Email, token)
+	if err != nil {
+		http.Error(w, "Failed to send email", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Password reset instructions sent to your email",
+	})
 }
 
 func ResetPassword(w http.ResponseWriter, r *http.Request) {
-    var request struct {
-        Token       string `json:"token"`
-        NewPassword string `json:"newPassword"`
-    }
-    if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-        http.Error(w, "Invalid input", http.StatusBadRequest)
-        return
-    }
+	var request struct {
+		Token       string `json:"token"`
+		NewPassword string `json:"newPassword"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, "Invalid input", http.StatusBadRequest)
+		return
+	}
 
-    // Validate token and update password
-    email, err := utils.VerifyResetToken(request.Token)
-    if err != nil {
-        http.Error(w, "Invalid/expired token", http.StatusUnauthorized)
-        return
-    }
+	// Validate token and update password
+	email, err := utils.VerifyResetToken(request.Token)
+	if err != nil {
+		http.Error(w, "Invalid/expired token", http.StatusUnauthorized)
+		return
+	}
 
-    hashedPassword := utils.HashPassword(request.NewPassword)
-    _, err = db.DB.Exec("UPDATE users SET password = $1 WHERE email = $2", hashedPassword, email)
-    if err != nil {
-        http.Error(w, "Failed to update password", http.StatusInternalServerError)
-        return
-    }
+	hashedPassword := utils.HashPassword(request.NewPassword)
+	_, err = db.DB.Exec("UPDATE users SET password = $1 WHERE email = $2", hashedPassword, email)
+	if err != nil {
+		http.Error(w, "Failed to update password", http.StatusInternalServerError)
+		return
+	}
 
-    w.WriteHeader(http.StatusOK)
-    json.NewEncoder(w).Encode(map[string]string{
-        "message": "Password updated successfully",
-    })
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Password updated successfully",
+	})
 }
 
 func Profile(w http.ResponseWriter, r *http.Request) {
@@ -190,4 +199,75 @@ func GithubCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.HandleOAuthCallback(w, user.Name, user.Email, r)
+}
+
+func VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+
+	if token == "" {
+		http.Error(w, "No token provided", http.StatusBadRequest)
+		return
+	}
+
+	tokenCheck, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(os.Getenv("SECRET_KEY")), nil
+	})
+
+	if err != nil || !tokenCheck.Valid {
+		http.Error(w, "JWT token is invalid", http.StatusUnauthorized)
+		return
+	}
+
+	claims, ok := tokenCheck.Claims.(jwt.MapClaims)
+	if !ok {
+		http.Error(w, "Invalid token claims", http.StatusBadRequest)
+		return
+	}
+
+	emailVal, ok := claims["email"]
+	if !ok {
+		http.Error(w, "Email not found in token", http.StatusBadRequest)
+		return
+	}
+
+	nameVal, ok := claims["name"]
+	if !ok {
+		http.Error(w, "Email not found in token", http.StatusBadRequest)
+		return
+	}
+
+	email, ok := emailVal.(string)
+	if !ok {
+		http.Error(w, "Email claim is not a string", http.StatusBadRequest)
+		return
+	}
+
+	name, ok := nameVal.(string)
+	if !ok {
+		http.Error(w, "Email claim is not a string", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("\nentered updating user is_verified email is %s and this is the name %s", email, name)
+	sqlQuery := `UPDATE users SET is_verified = true WHERE email = $1`
+	var _, queryErr = db.DB.Exec(sqlQuery, name)
+	if queryErr != nil {
+		http.Error(w, "Database error while verifying", http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	})
+	redirectUrl := fmt.Sprintf("%s/testProtectedRoute", os.Getenv("FRONTEND_URL"))
+	http.Redirect(w, r, redirectUrl, http.StatusFound)
+
 }

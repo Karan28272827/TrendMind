@@ -13,5 +13,7 @@ export const verifyOtp = async (email: string, otp: string, name: string, passwo
 };
 
 export const loginUser = async(data: LoginFormData) => {
-  return axios.post(API_ENDPOINTS.LOGIN, data);
+  return axios.post(API_ENDPOINTS.LOGIN, data, {
+    withCredentials: true,
+  });
 }

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoginFormData } from "@/types/formTypes";
 import { loginUser } from "@/services/authService";
-import { ResetPasswordPage } from "@/components/forms/resetPassword/resetPassword";
+// import { ResetPasswordPage } from "@/components/forms/resetPassword/resetPassword";
 import api from "@/constants/api";
 import axios from "axios";
 import "./LoginForm.css";
@@ -46,17 +46,17 @@ const LoginForm = () => {
         const token = response.data.JWT || response.data;
 
         // ✅ Store token in localStorage
-        localStorage.setItem("token", token);
+        // localStorage.setItem("token", token);
 
-        // ✅ Set token in Axios headers globally
-        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+        // // ✅ Set token in Axios headers globally
+        // api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
         // ✅ Optionally save user info (no password!)
         const user = {
           email: formData.email,
           // name: response.data.name || "", // only if backend provides it
         };
-        localStorage.setItem("user", JSON.stringify(user));
+        // localStorage.setItem("user", JSON.stringify(user));
 
         alert("Login successful!");
         router.push("/testProtectedRoute");

@@ -29,6 +29,8 @@ require (
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/markbates/goth v1.81.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
+	github.com/sendgrid/rest v2.6.9+incompatible // indirect
+	github.com/sendgrid/sendgrid-go v3.16.0+incompatible // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect

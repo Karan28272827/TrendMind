@@ -12,8 +12,8 @@ import (
 func CreateToken(email string, name string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"email": email,
 			"name":  name,
+			"email": email,
 			"exp":   time.Now().Add(time.Hour * 24).Unix(),
 		})
 
@@ -28,4 +28,3 @@ func CreateToken(email string, name string) (string, error) {
 
 	return tokenString, nil
 }
-

@@ -6,7 +6,11 @@ import React from "react";
 const TestProtectedRoute = () => {
 
     const testFunc = async () => {
-        const res = await axios.get("http://localhost:8080/auth/profile")
+        const res = await axios.get("http://localhost:8080/auth/profile",
+            {
+                withCredentials: true
+            }
+        )
         console.log("hello lol  " + res)
     }
 

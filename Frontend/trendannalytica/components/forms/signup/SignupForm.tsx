@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { SignupFormData } from "@/types/formTypes";
 import { isPasswordValid } from "@/utils/validators";
 import { signupUser, verifyOtp } from "@/services/authService";
-import { setLocalStorage } from "@/utils/localStorage";
+// import { setLocalStorage } from "@/utils/localStorage";
 import "./SignupForm.css"; 
 
 const SignupForm = () => {
@@ -82,8 +82,8 @@ const SignupForm = () => {
           profileImage: profileImageUrl,
         };
 
-        setLocalStorage("user", userData);
-        setLocalStorage("token", response.data.token);
+        // setLocalStorage("user", userData);
+        // setLocalStorage("token", response.data.token);
 
         window.dispatchEvent(new Event("storage"));
         router.push("/bookings");

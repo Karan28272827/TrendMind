@@ -17,13 +17,15 @@ func AuthRouter() http.Handler {
 		r.Get("/profile", handlers.Profile)
 	})
 
-	r.Post("/register", handlers.Register) //register route
-	r.Post("/login", handlers.Login)       //login route
+	r.Post("/register", handlers.Register)              //register route
+	r.Post("/login", handlers.Login)                    //login route
 	r.Post("/forgot-password", handlers.ForgotPassword) // request-password-reset
 	r.Post("/reset-password", handlers.ResetPassword)
 
 	r.Get("/google", handlers.GoogleLogin)
 	r.Get("/google/callback", handlers.GoogleCallback)
+
+	r.Get("/verify", handlers.VerifyEmail)
 
 	r.Get("/github", handlers.GithubLogin)
 	r.Get("/github/callback", handlers.GithubCallback)
