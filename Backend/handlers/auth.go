@@ -81,6 +81,15 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Fprintf(w, "Correct password, logged in\n JWT: %s", tokenStr)
+		fmt.Println("Entering db select query for is verified")
+		row := db.DB.QueryRow("SELECT is_verified FROM users WHERE email=$1", loginUser.Email)
+		var isVerified bool
+		if err := row.Scan(&isVerified); err != nil {
+			fmt.Println("There was a db error", err)
+		}
+		if !isVerified {
+			utils.SendVerificationEmail(loginUser.Email, tokenStr)
+		}
 	}
 }
 
