@@ -1,0 +1,9 @@
+Index(['search_terms' , 'product_name', CTR_last_7_days', 'city_id', 'query_type_head', 'CTR_product_30_days',
+       'total_clicks', 'query_type_tail', 'product_variant_id',
+       'product_ctr_city_30_days', 'category_name', 'session_views',
+       'CTR_last_30_days', 'query_products_clicks_last_30_days',
+       'total_unique_orders', 'query_product_similarity', 'subcategory_name',
+       'is_clicked', 'savings', 'latest_margin',
+       'query_product_plt_clicks_30_days', 'savings_with_pass', 'ad_revenue',
+       'product_atcs_30_days'],
+      dtype='object')
