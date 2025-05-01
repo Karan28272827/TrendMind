@@ -80,6 +80,14 @@ func Login(w http.ResponseWriter, r *http.Request) {
 			fmt.Println("There was some JWT token error", err)
 			return
 		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "token",
+			Value:    tokenStr,
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   false,
+			SameSite: http.SameSiteLaxMode,
+		})
 		fmt.Fprintf(w, "Correct password, logged in\n JWT: %s", tokenStr)
 		fmt.Println("Entering db select query for is verified")
 		row := db.DB.QueryRow("SELECT is_verified FROM users WHERE email=$1", loginUser.Email)
