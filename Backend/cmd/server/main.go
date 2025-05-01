@@ -17,10 +17,6 @@ import (
 	"github.com/markbates/goth/gothic"
 )
 
-type User struct {
-	Name string `json:"name"`
-	Age  int    `json:"age"`
-}
 
 func main() {
 
@@ -33,6 +29,8 @@ func main() {
 	r.Use(middleware.CORSMiddleware())
 
 	r.Mount("/auth", routes.AuthRouter())
+	r.Mount("/chat", routes.ChatRouter())
+
 
 	http.ListenAndServe(":8080", r)
 
